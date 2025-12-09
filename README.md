@@ -14,47 +14,90 @@ The project is built primarily as a systems engineering & backend learning platf
 
 - Cloud deployment on AWS
 
-flowchart TB
+                       Users
+             (Residents, Tenants, Staff)
+                          │
+                          ▼
+                   API Gateway
+                     (FastAPI)
+                          │
+        ┌─────────────────┼─────────────────┐
+        ▼                 ▼                 ▼
+ Ingestion Service   Query API        Dashboard API
+ (Report submits)
+        │
+        ▼
+ Background Processing & Scoring Engine
+(ThreadPool + ProcessPool)
+        │
+        ▼
+────────────── CORE ANALYTICS ENGINE ──────────────
+- Issue grouping / deduplication
+- SLA computations
+- Trend metrics & rankings
+- Multi-tenant rule evaluation
+───────────────────────────────────────────────────
+                          │
+                          ▼
+                  PostgreSQL (AWS RDS)
+         Multi-tenant relational data store
+                          │
+                          ▼
+                    Score Dashboards
+               (per-tenant, configurable)
 
-%% ===============================
-%% ACTORS
-%% ===============================
-Users([Residents / Tenants / Staff])
+                          ▲
+                          │
+                    LLM Classification
+         (Resume/complaint/JD style NLP parsing)
+             - Category inference
+             - Severity extraction
+             - Similarity detection
+| Layer                | Technology                               |
+| -------------------- | ---------------------------------------- |
+| API                  | **FastAPI**                              |
+| Workers              | **Python 3.11**                          |
+| Concurrency          | ThreadPoolExecutor + ProcessPoolExecutor |
+| NLP / Classification | LLM (OpenAI-compatible API)              |
+| Database             | PostgreSQL 15 (AWS RDS)                  |
+| ORM                  | SQLAlchemy (future)                      |
+| Infrastructure       | AWS EC2 + Docker Compose                 |
+| Queueing (future)    | Redis / AWS SQS                          |
+| Metrics              | Custom aggregation engine                |
+| Dashboards           | REST/JSON frontend (future React UI)     |
 
-%% ===============================
-%% API LAYER
-%% ===============================
-API[API Gateway<br/>FastAPI<br/>Auth + Validation]
+This project is primarily designed to explore:
 
-%% ===============================
-%% INGESTION
-%% ===============================
-Ingest[Ingestion Service<br/>Input Normalization]
+✅ SQL Performance Engineering
 
-LLM[LLM Classification Layer<br/>- Category extraction<br/>- Severity detection<br/>- Issue similarity matching]
+Query planning (EXPLAIN ANALYZE)
 
-%% ===============================
-%% WORKER ENGINE
-%% ===============================
-Workers[Background Analytics Engine<br/>ThreadPool + ProcessPool]
+Composite vs partial indexing
 
-Core[Core Analytics Engine<br/>- Issue deduplication<br/>- Status workflows<br/>- SLA computation<br/>- Priority scoring<br/>- Ranking aggregation]
+Read/write tradeoffs under concurrency
 
-%% ===============================
-%% STORAGE
-%% ===============================
-DB[(PostgreSQL on AWS RDS<br/>Multi-Tenant Relational Store)]
+✅ Python Concurrency Patterns
 
-%% ===============================
-%% OUTPUT
-%% ===============================
-Dashboards[Dashboards & Public/Private Views<br/>Tenant-configured KPIs]
+Queue-based pipelines
 
-%% ===============================
-%% FLOW
-%% ===============================
-Users --> API --> Ingest --> LLM --> DB
+Separation of IO-bound vs CPU-bound workloads
 
-DB <--> Workers --> Core --> DB
+Producer → Worker → Aggregator patterns
 
-DB --> Dashboards
+✅ Distributed Systems Fundamentals
+
+Stateless process scaling
+
+Background job orchestration
+
+Snapshot-based reporting
+
+✅ Cloud Engineering
+
+EC2 provisioning
+
+Secure RDS networking
+
+Docker deployment patterns
+
+Environment variable configuration
