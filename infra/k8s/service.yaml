@@ -1,0 +1,58 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicpulse-api
+spec:
+  type: LoadBalancer
+  selector:
+    app: civicpulse-api
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 8000
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: civicpulse-frontend
+spec:
+  type: LoadBalancer
+  selector:
+    app: civicpulse-frontend
+  ports:
+    - name: http
+      protocol: TCP
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: civicpulse-ingress
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - civicpulse.example.com
+    secretName: civicpulse-tls
+  rules:
+  - host: civicpulse.example.com
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: civicpulse-api
+            port:
+              number: 80
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: civicpulse-frontend
+            port:
+              number: 80

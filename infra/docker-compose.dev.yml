@@ -1,0 +1,57 @@
+# Docker Compose override for local development
+# Usage: docker-compose -f docker-compose.yml -f infra/docker-compose.dev.yml up
+
+version: '3.8'
+
+services:
+  db:
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./sql:/docker-entrypoint-initdb.d  # Auto-run schema on first start
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.api
+    volumes:
+      - ./app:/app/app  # Hot reload for development
+      - ./sql:/app/sql
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    environment:
+      - DATABASE_URL=postgresql://civicpulse:changeme@db:5432/civicpulse_dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.worker
+    volumes:
+      - ./app:/app/app
+      - ./scripts:/app/scripts
+    environment:
+      - DATABASE_URL=postgresql://civicpulse:changeme@db:5432/civicpulse_dev
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL:-https://api.openai.com/v1}
+      - LOG_LEVEL=DEBUG
+      - ENVIRONMENT=development
+    depends_on:
+      - db
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infra/docker/Dockerfile.frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
